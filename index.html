@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool Chat Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f7f9fc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #2d98da;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #74b9ff;
+        }
+
+        button {
+            background-color: #0984e3;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #74b9ff;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        #response {
+            margin-top: 20px;
+            background-color: #f1f2f6;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+            word-wrap: break-word;
+            display: none;
+        }
+
+        #response.active {
+            display: block;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #0984e3;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>EZY-ECE</h1>
+        <form id="queryForm">
+            <input type="text" id="query" name="query" placeholder="Ask me anything..." required>
+            <button type="submit">Submit</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="loader"></div>
+            <p>Processing your query...</p>
+        </div>
+
+        <div id="response" class="response-box">
+            <p><strong>Response:</strong></p>
+            <div id="responseText"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const query = document.getElementById('query').value;
+            const responseElement = document.getElementById('response');
+            const responseText = document.getElementById('responseText');
+            const loadingElement = document.getElementById('loading');
+            const submitButton = event.target.querySelector('button');
+
+            // Reset UI
+            responseElement.classList.remove('active');
+            responseText.textContent = '';
+            loadingElement.classList.add('active');
+            submitButton.disabled = true;
+
+            try {
+                // Create session
+                const sessionResponse = await fetch('/create-session', { method: 'POST' });
+                if (!sessionResponse.ok) throw new Error('Failed to create session.');
+                const sessionData = await sessionResponse.json();
+                const sessionId = sessionData.id;
+
+                // Submit query
+                if (sessionId) {
+                    const queryResponse = await fetch('/submit-query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ sessionId: sessionId, query: query })
+                    });
+
+                    if (!queryResponse.ok) throw new Error('Failed to submit query.');
+                    const queryData = await queryResponse.text();
+
+                    responseText.textContent = queryData;
+                    responseElement.classList.add('active');
+                }
+            } catch (error) {
+                responseText.textContent = 'Error: ' + error.message;
+                responseElement.classList.add('active');
+            } finally {
+                // Reset state
+                loadingElement.classList.remove('active');
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
